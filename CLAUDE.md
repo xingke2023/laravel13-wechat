@@ -4,247 +4,175 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Architecture
 
-This is a full-stack application with **separate backend and frontend** in a monorepo structure, plus a built-in admin panel:
+Monorepo template with **four surfaces sharing one backend**:
 
-- **Backend API**: Laravel 13 API (PHP 8.4) in `backend/` directory, served at `/api/*`
-- **Frontend**: Next.js 16 (React 19.2, TypeScript) in `frontend/` directory
-- **Admin Panel**: Filament 5.6 mounted at `/admin` on the Laravel app (same host as the API)
+| Surface | Code | Audience | Auth | Where it runs |
+|---|---|---|---|---|
+| Laravel API | `backend/` | API consumers | JWT Bearer (`auth:api`) | `127.0.0.1:8081` |
+| Filament admin | (same Laravel) | Administrators | Laravel session | `127.0.0.1:8081/admin` |
+| Next.js web | `frontend/` | End users | JWT (localStorage) | `127.0.0.1:3111` |
+| WeChat mini program | `miniprogram/` | End users | JWT via `wx.login` | WeChat client |
 
-### Three-tier surface
-| Surface | URL | Audience | Auth |
-|---|---|---|---|
-| Next.js frontend | `http://0.0.0.0:3111` | End users | JWT Bearer (stored in localStorage) |
-| Laravel API | `http://0.0.0.0:8068/api/*` | API consumers | JWT via `auth:api` guard |
-| Filament admin | `http://0.0.0.0:8068/admin` | Administrators | Laravel session (separate from JWT) |
+All four are reverse-proxied by nginx through `paper.xingke888.com` (configured in `paper.xingke888.com.conf`, behind Cloudflare). The Laravel API + Filament admin **share `users` table but use different auth mechanisms** — logging into one does NOT log into the other.
 
-API and admin share the same `users` table but use **different auth mechanisms** — a user logging into the frontend does NOT log them into `/admin`, and vice versa.
+### Auth flows (three distinct, same User model)
 
-### Authentication Flow
-JWT (`php-open-source-saver/jwt-auth`) provides token-based authentication. The flow is:
-1. Frontend sends credentials to `/api/auth/login` or `/api/auth/register`
-2. Backend returns JWT `access_token` + user object + `expires_in`
-3. Frontend stores token in localStorage
-4. Frontend sends token via `Authorization: Bearer {token}` header for protected routes
-5. Token refresh available via `POST /api/auth/refresh`
+1. **Email/password** (web frontend) — `POST /api/auth/login` → JWT
+2. **WeChat one-tap** (mini program) — `wx.login` → `POST /api/auth/wechat-login` with `{code}` → backend calls `https://api.weixin.qq.com/sns/jscode2session` → looks up or creates User by `wx_openid` (fake `wx_{openid}@wx.local` email) → JWT
+3. **Filament session** (admin panel) — Laravel's session cookie, separate from JWT entirely
 
-**Key Implementation**:
-- `AuthProvider` (frontend/lib/auth-context.tsx) manages global auth state
-- `useAuth` hook provides auth methods to components
-- `ApiClient` (frontend/lib/api/client.ts) auto-injects Bearer token
-- Backend routes protected with `auth:api` middleware
-- `AuthController` uses `auth('api')` guard for all operations
+JWT lifetime: `JWT_TTL=4320` (3 days), `JWT_REFRESH_TTL=20160` (14 days). Refresh via `POST /api/auth/refresh`.
 
-### CORS & Cross-Origin Setup
-Backend is configured to accept requests from frontend via:
-- `backend/.env`: `FRONTEND_URL` specifies allowed origin
-- Current ports: Backend 8068, Frontend 3111 (both bound to 0.0.0.0 for remote access)
+### Backend layout (Laravel 13, PHP 8.4)
 
-### API Architecture
-- Routes defined in `backend/routes/api.php`
-- All routes prefixed with `/api`
-- Controllers in `backend/app/Http/Controllers/Api/`
-- PostController uses route model binding and authorization checks (owner-only operations)
+- `routes/api.php` — all 14 routes; public `/auth/*`, protected `/posts/*` `/ai/*` `/uploads`
+- `app/Http/Controllers/Api/` — `AuthController` (5 methods), `PostController` (owner-only checks via `$post->user_id !== $request->user()->id`), `AiController` (DeepSeek chat + SSE stream), `UploadController` (multipart → `storage/app/public/uploads/{userId}/{yyyymm}/{uuid}.{ext}`)
+- `app/Services/DeepSeekService.php` — OpenAI-compatible client; `chat()` blocks, `chatStream()` uses cURL `WRITEFUNCTION` to parse SSE chunks. Handles both `delta.content` (final answer) and `delta.reasoning_content` (model thinking, separately tagged)
+- `app/Filament/Resources/` — auto-discovered admin CRUD pages (`PostResource`, `UserResource`)
+- `app/Models/User.php` — fillable includes `wx_openid`, `wx_unionid` for WeChat users
+- `bootstrap/app.php` — uses Laravel 13 streamlined config; `trustProxies(at: '*')` is required so HTTPS redirects work behind Cloudflare
+- `config/services.php` — `deepseek` + `wechat` blocks read AppID/secret/API key from env
 
-### Filament Admin Panel
-- Provider: `backend/app/Providers/Filament/AdminPanelProvider.php` — registers panel id `admin` at path `/admin`
-- Resources auto-discovered from `backend/app/Filament/Resources/`:
-  - `PostResource` — CRUD for posts
-  - `UserResource` — CRUD for users
-- Login uses the default Filament session-based form (`->login()`)
-- **Access control**: by default any authenticated `User` can sign in. For production, implement `User::canAccessPanel(Panel $panel)` returning a role/admin check
-- Pages directory `backend/app/Filament/Pages/` is auto-discovered but currently empty
+### Frontend (`frontend/`, Next.js 16 + React 19.2)
+
+- `lib/api/` — `apiClient` (auto-injects Bearer token), typed methods for `authApi`, `postsApi`, `aiApi.chat`, `aiChatStream` (fetch + ReadableStream SSE parser)
+- `lib/auth-context.tsx` — `AuthProvider` + `useAuth()` hook (user, token, login, register, logout, isAuthenticated)
+- `components/onboarding-chat.tsx` — full-featured chat modal mimicking WeChat UI (red gradient header, cream chat body, AI/user bubbles, font-size A/A/A, streaming AI replies via `aiChatStream`, 401 auto-logout)
+- `app/page.tsx` — landing page with red CTA button that opens `<OnboardingChat>`
+- `next.config.ts` — `allowedDevOrigins: ['paper.xingke888.com']` required so dev resources serve to non-localhost hosts
+
+### Mini program (`miniprogram/`, native WXML/WXSS/JS)
+
+**Critical constraint**: code is ES5-style (no `async/await`, `const`/`let`, arrow funcs, destructuring) to avoid WeChat DevTools triggering `@babel/runtime` transpile (which breaks module registration). When editing, keep `function`/`var`/Promise chains; **never introduce ES6+ syntax** unless you also re-enable npm-based babel runtime.
+
+- `app.js` — `globalData: { apiBaseUrl, token, user }`; loads token from `wx.getStorageSync` on launch
+- `utils/request.js` — `wx.request` wrapper with auto Authorization injection, 401 triggers re-login via `wx.login`
+- `utils/api.js` — `wechatLogin`, `aiChat`, `aiChatStream` (uses `wx.request enableChunked + onChunkReceived`, falls back if base lib < 2.20.2), `uploadFile`
+- `pages/chat/chat.{wxml,wxss,js,json}` — single-page chat replicating Web `OnboardingChat`:
+  - Markdown rendered as **wxml blocks** (not rich-text) — lists use flex layout with computed `markerWidth` so numbered items align even with 1./10. mixed; bold/italic/code uses small inline `<rich-text>`
+  - Streaming AI replies throttled to 50ms per `setData` to spare low-end Android
+  - Inline SVG icons (Feather Icons style, encoded as `data:image/svg+xml;utf8,...`) stored in `data.icons` for the +/mic/camera/album/file/bot avatar
+  - Media bubble types: `image` (uses local `tempPath` first to avoid downloadFile domain whitelist), `file`, `voice` (recorded via `wx.getRecorderManager`)
+  - `scroll-view` for messages must have **explicit pixel height** via `style="height: {{msgsHeight}}px"`; `flex:1` alone breaks scrolling on real device. `_recomputeMsgsHeight()` uses `SelectorQuery` after layout
+- `project.config.json` AppID: `wx81855e163e189a51`; `setting.es6: false` and `enhance: false` keep JS pass-through
+
+### Production deployment
+
+| File | Role |
+|---|---|
+| `ecosystem.config.js` | PM2 spec: `clawcn-template-backend` runs `php8.4 artisan serve --host=127.0.0.1 --port=8081`; `clawcn-template-frontend` runs `./node_modules/.bin/next dev -p 3111 -H 127.0.0.1` |
+| `paper.xingke888.com.conf` | nginx: terminates HTTPS, proxies `/api`, `/admin/*` to 8081, everything else to 3111. **`/api/ai/chat-stream` has `proxy_buffering off; proxy_cache off; proxy_read_timeout 300s`** for SSE |
+| `/etc/nginx/sites-enabled/paper.xingke888.com` | symlink to deployed copy of the conf above |
+| Cloudflare | terminates TLS for browsers; **must enable WebSockets in Network settings** for Next.js dev HMR to work |
+
+### Required env (`backend/.env`)
+
+```
+APP_URL=https://paper.xingke888.com
+FRONTEND_URL=https://paper.xingke888.com
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_DATABASE=clawdb
+DB_USERNAME=<rotate-able role, NOT clawcn>   # see Security Notes below
+DB_PASSWORD=<rotate-able>
+JWT_SECRET=<php artisan jwt:secret>
+JWT_TTL=4320            # access token lifetime (minutes) = 3 days
+JWT_REFRESH_TTL=20160   # refresh window (minutes) = 14 days
+DEEPSEEK_API_KEY=sk-...
+DEEPSEEK_MODEL=deepseek-v4-flash  # or deepseek-v4-pro (slower, smarter; both are reasoning models — keep max_tokens >= 500)
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+WECHAT_APPID=wx81855e163e189a51
+WECHAT_APPSECRET=<from mp.weixin.qq.com>
+```
+
+`frontend/.env.local`:
+```
+NEXT_PUBLIC_API_URL=https://paper.xingke888.com/api
+```
 
 ## Development Commands
 
-### Backend (Laravel)
+### Backend
 ```bash
 cd backend
-
-# Start server (remote access)
-php artisan serve --host=0.0.0.0 --port=8068
-
-# Database
-php artisan migrate              # Run migrations
-php artisan migrate:fresh        # Reset database
-php artisan db:seed              # Seed data (demo user: demo@example.com / password)
-
-# Testing
-php artisan test                 # Run all tests (Pest)
-php artisan test --filter=testName  # Run specific test
-
-# Cache
-php artisan cache:clear
-php artisan config:cache         # Cache config for production
-php artisan route:cache          # Cache routes for production
-
-# Utilities
-php artisan route:list           # List all routes
-php artisan make:controller Api/ExampleController  # New controller
-php artisan make:model Example -mf  # Model + migration + factory
-
-# Filament admin
-php artisan make:filament-resource Example       # Scaffold a Filament resource
-php artisan make:filament-user                   # Create an admin user interactively
-php artisan filament:upgrade                     # Run after composer updates
+php artisan serve --host=127.0.0.1 --port=8081     # dev (PM2 runs this in prod)
+php artisan migrate                                  # apply migrations
+php artisan db:seed                                  # demo user: demo@example.com / password
+php artisan test                                     # Pest tests
+php artisan test --filter=testName                   # single test
+php artisan route:list                               # see all routes
+php artisan tinker                                   # REPL
+php artisan jwt:secret                               # regenerate JWT secret
+php artisan storage:link                             # required for /storage/uploads URLs
+vendor/bin/pint --dirty                              # PHP formatter (run before commit)
 ```
-
-### Frontend (Next.js)
-```bash
-cd frontend
-
-# Start dev server (configured for port 3111, remote access)
-npm run dev
-
-# Build
-npm run build
-npm start                        # Production server
-
-# Linting
-npm run lint
-
-# Add shadcn/ui components
-npx shadcn@latest add [component-name]
-```
-
-## File Structure Patterns
-
-### Backend
-- **Controllers**: `app/Http/Controllers/Api/` - API endpoints
-- **Models**: `app/Models/` - Eloquent models with relationships
-- **Routes**: `routes/api.php` - API route definitions
-- **Migrations**: `database/migrations/` - Database schema
-- **Factories**: `database/factories/` - Test data generation
-- **Config**: `bootstrap/app.php` - Middleware, routing, exceptions
-- **Filament resources**: `app/Filament/Resources/` - Admin CRUD pages
-- **Filament panel config**: `app/Providers/Filament/AdminPanelProvider.php`
 
 ### Frontend
-- **Pages**: `app/*/page.tsx` - Next.js App Router pages
-- **API Layer**: `lib/api/` - HTTP client, type definitions, service methods
-- **Auth**: `lib/auth-context.tsx` - Global authentication state
-- **UI Components**: `components/ui/` - shadcn/ui components
-- **Layout**: `app/layout.tsx` - Root layout with AuthProvider wrapper
-
-## Key Configuration Files
-
-### Backend Environment (backend/.env)
-```
-APP_URL=http://0.0.0.0:8068
-FRONTEND_URL=http://0.0.0.0:3111
-JWT_SECRET=<generated via php artisan jwt:secret>
-JWT_ALGO=HS256
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=clawdb
-DB_USERNAME=postgres
+```bash
+cd frontend
+npm run dev                                          # localhost:3111
+npm run build && npm start                           # production
+npm run lint                                         # ESLint
+npx tsc --noEmit                                     # type-check only
+npx shadcn@latest add [component]                    # add UI component
 ```
 
-### Frontend Environment (frontend/.env.local)
+### Mini program
+Open `miniprogram/` in WeChat DevTools. AppID is pre-filled in `project.config.json`. For local development, `project.private.config.json` disables `urlCheck` so requests to `paper.xingke888.com` work. **Before real-device preview**: add `https://paper.xingke888.com` to all four whitelists in mp.weixin.qq.com → 开发管理 → 服务器域名 (`request`, `uploadFile`, `downloadFile`, `socket` not needed).
+
+### PM2 (production processes)
+```bash
+pm2 start ecosystem.config.js
+pm2 list
+pm2 restart clawcn-template-backend
+pm2 logs clawcn-template-frontend --lines 50
+pm2 save                                             # persist process list across reboots
 ```
-NEXT_PUBLIC_API_URL=http://0.0.0.0:8068/api
-```
 
-## Common Development Tasks
+## Patterns to follow when extending
 
-### Adding a New API Endpoint
-1. Create controller method in `backend/app/Http/Controllers/Api/`
-2. Add route in `backend/routes/api.php`
-3. Add TypeScript types in `frontend/lib/api/types.ts`
-4. Add API method in `frontend/lib/api/` service file
-5. Use in components via API client
+### Adding a new API endpoint
+1. Controller method in `backend/app/Http/Controllers/Api/`
+2. Route in `backend/routes/api.php` (inside `auth:api` group if protected)
+3. `php artisan route:cache` + `pm2 restart clawcn-template-backend`
+4. Frontend: TypeScript types in `frontend/lib/api/types.ts`, method in `frontend/lib/api/*.ts`, re-export in `frontend/lib/api/index.ts`
+5. Mini program: method in `miniprogram/utils/api.js` using `request()` helper
 
-### Adding a New Model with CRUD
+### Adding a Filament resource
 ```bash
 cd backend
-php artisan make:model Example -mfc  # Model + migration + factory + controller
-# Edit migration, model relationships, factory
-php artisan migrate
-# Add routes to routes/api.php
-# Create corresponding TypeScript types and API methods in frontend
+php artisan make:filament-resource Example
 ```
+Auto-discovered from `app/Filament/Resources/`. For production, gate access via `User::canAccessPanel(Panel $panel)` (currently any authenticated user can sign in).
 
-### Adding a New Page
-1. Create `frontend/app/[pagename]/page.tsx`
-2. Use `'use client'` directive if using hooks or interactivity
-3. Import `useAuth` from `@/lib/auth-context` for auth state
-4. Use components from `@/components/ui/` for UI
+### Calling DeepSeek
+- Blocking: `DeepSeekService::chat([{role,content},...], $opts)` returns full string
+- Streaming: `chatStream($messages, $opts, function($delta, $kind) { ... })` — `$kind` is `'content'` or `'reasoning'`; controller emits SSE to client
+- Both deepseek-v4-pro and deepseek-v4-flash are **reasoning models** — they use `delta.reasoning_content` for thinking before `delta.content` arrives. Keep `max_tokens >= 500` or reasoning eats the budget and `content` comes back empty.
 
-### Working with Database
+### Mini program scroll-view layout
+Always set explicit pixel height via `style="height: {{px}}px"`. `flex:1` does not reliably size scroll-view on real device. After any state change that affects bottom-panel height (login/voice/plus menu), call `_recomputeMsgsHeight()` via `wx.nextTick`.
+
+### Mini program ES5-only
+Adding `async/await` or `const`/`let` anywhere in `miniprogram/**/*.js` will silently disable that file's module registration (you get `module 'utils/api.js' is not defined`). Use `function` declarations, `var`, and Promise chains.
+
+## Security notes
+
+The DB role originally named `clawcn` was repeatedly compromised by an in-host attacker (cryptominer + brute-force PG). Current `.env` uses a randomly-named role (`clawapp_*`) so the attacker still pounding `clawcn` doesn't affect the app. If you create a new role, give it `GRANT ALL ON SCHEMA public ... ALTER DEFAULT PRIVILEGES ... GRANT ALL ON TABLES TO new_user` so future tables work.
+
+If the app suddenly returns `SQLSTATE[08006] ... password authentication failed for user "clawapp_*"` again:
 ```bash
-# Reset and seed (development only)
-cd backend
-php artisan migrate:fresh --seed
-
-# Interactive testing
-php artisan tinker
-# >>> User::factory(5)->create();
-# >>> Post::factory(10)->create();
+cd /home/ubuntu/clawcn-template/backend
+PASS=$(grep "^DB_PASSWORD=" .env | cut -d= -f2-)
+USER=$(grep "^DB_USERNAME=" .env | cut -d= -f2-)
+sudo -u postgres psql -c "ALTER ROLE $USER WITH PASSWORD '$PASS';"
+pm2 restart clawcn-template-backend
 ```
 
-## Testing Approach
+## Technology versions
 
-### Backend (Pest)
-- Tests in `backend/tests/Feature/` and `backend/tests/Unit/`
-- Use factories for model creation
-- Test structure: `it('description', function() { ... })`
-- Run specific file: `php artisan test tests/Feature/ExampleTest.php`
-
-### API Testing with cURL
-```bash
-# Login
-curl -X POST http://0.0.0.0:8068/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","password":"password"}'
-
-# Create post (replace TOKEN)
-curl -X POST http://0.0.0.0:8068/api/posts \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer TOKEN" \
-  -d '{"title":"Test","content":"Content","published":true}'
-```
-
-## Important Laravel 13 Patterns
-
-### Middleware Registration
-Use `bootstrap/app.php` instead of `app/Http/Kernel.php` (removed in Laravel 11+):
-```php
-->withMiddleware(function (Middleware $middleware): void {
-    // JWT auth:api guard is configured in config/auth.php
-    // No additional middleware prepend needed for JWT
-})
-```
-
-### Model Casts
-Prefer `casts()` method over `$casts` property:
-```php
-protected function casts(): array {
-    return ['published' => 'boolean'];
-}
-```
-
-### Authorization
-PostController implements owner-only operations by checking `$post->user_id !== $request->user()->id`
-
-## Technology Versions
-
-- Laravel 13.8.0, PHP 8.4.1, JWT-Auth 2.9, Filament 5.6, Pest 4.4.5
-- Next.js 16.2.6, React 19.2.6, TypeScript 5.x, Tailwind CSS 4.x
-- Database: PostgreSQL (development & production)
-
-## Troubleshooting
-
-### CORS Issues
-- Verify both servers are running on correct ports
-- Check `FRONTEND_URL` in backend/.env includes frontend URL
-- Clear browser cache and localStorage
-
-### Authentication Issues
-- Clear localStorage: `localStorage.clear()` in browser console
-- Verify `NEXT_PUBLIC_API_URL` in frontend/.env.local matches backend
-- Check token is being sent: inspect Network tab in DevTools
-
-### Port Conflicts
-Current setup uses non-standard ports (8068, 3111) to avoid conflicts. Modify:
-- Backend: `backend/.env` APP_URL and serve command
-- Frontend: `frontend/package.json` dev script and `.env.local`
+- Laravel 13.8.0, PHP 8.4.1, Filament 5.6, JWT-Auth 2.9, Pest 4.4.5
+- Next.js 16.2.6, React 19.2.6, TypeScript 5, Tailwind CSS 4
+- WeChat 基础库 ≥ 2.20.2 (required for `enableChunked` SSE in mini program)
+- PostgreSQL 16
+- DeepSeek API (`deepseek-v4-pro` / `deepseek-v4-flash` reasoning models)

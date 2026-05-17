@@ -1,14 +1,17 @@
 'use client';
 
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ThemeColorPicker } from "@/components/theme-color-picker";
+import { OnboardingChat } from "@/components/onboarding-chat";
 
 export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
+  const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -53,6 +56,13 @@ export default function Home() {
             <p className="text-xl text-muted-foreground">
               Laravel API + Next.js Frontend + Tailwind CSS + shadcn/ui
             </p>
+            <button
+              onClick={() => setChatOpen(true)}
+              className="mt-6 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:opacity-90"
+              style={{ background: "linear-gradient(135deg, #E65C46 0%, #c9402a 100%)" }}
+            >
+              🦞 体验 ClawCN 助手
+            </button>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
@@ -118,6 +128,8 @@ export default function Home() {
           </Card>
         </div>
       </main>
+
+      {chatOpen && <OnboardingChat onClose={() => setChatOpen(false)} />}
     </div>
   );
 }
