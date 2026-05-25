@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EIFS 客戶個案分析報告 — Everbest Insurance and Financial Services</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "PingFang HK", "Microsoft JhengHei", "Noto Sans CJK TC", Arial, sans-serif;
+    background: #f4f6f9;
+    color: #2d3748;
+    line-height: 1.7;
+  }
+
+  /* ── Header ── */
+  .site-header {
+    background: linear-gradient(135deg, #1a3a5c 0%, #2563a8 100%);
+    color: #fff;
+    padding: 36px 48px 28px;
+    position: relative;
+  }
+  .site-header .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .site-header .logo-icon {
+    width: 48px; height: 48px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+  }
+  .site-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: .5px;
+  }
+  .site-header .subtitle {
+    font-size: 13px;
+    opacity: .75;
+    letter-spacing: .3px;
+  }
+  .site-header .meta {
+    margin-top: 16px;
+    display: flex;
+    gap: 24px;
+    font-size: 12px;
+    opacity: .8;
+  }
+  .site-header .meta span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .toc h2 { font-size: 14px; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 14px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { color: #2563a8; text-decoration: none; font-size: 14px; }
+  .toc a:hover { text-decoration: underline; }
+
+  /* ── Section / Case ── */
+  .case-section {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 28px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .case-header {
+    padding: 20px 28px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .case-badge {
+    flex-shrink: 0;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .badge-a { background: #e53e3e; }
+  .badge-b { background: #d69e2e; }
+  .badge-c { background: #38a169; }
+  .badge-d { background: #805ad5; }
+  .badge-e { background: #2b6cb0; }
+  .badge-f { background: #2c7a7b; }
+
+  .case-title { font-size: 16px; font-weight: 600; color: #1a202c; margin-bottom: 4px; }
+  .case-meta { font-size: 12px; color: #718096; }
+  .case-meta span { margin-right: 16px; }
+
+  .case-body { padding: 24px 28px; }
+
+  /* ── Thread / message blocks ── */
+  .thread { display: flex; flex-direction: column; gap: 12px; }
+
+  .msg {
+    border-left: 3px solid #e2e8f0;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    background: #f8fafc;
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg.eifs   { border-left-color: #2563a8; background: #ebf4ff; }
+  .msg.client { border-left-color: #38a169; background: #f0fff4; }
+  .msg.aia    { border-left-color: #718096; background: #f7fafc; }
+
+  .msg-sender {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    margin-bottom: 6px;
+    opacity: .7;
+  }
+
+  /* ── Framework / API doc ── */
+  .module-section {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 28px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .module-header {
+    background: #1a3a5c;
+    color: #fff;
+    padding: 16px 28px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .module-body {
+    padding: 24px 28px;
+  }
+  .module-chunk {
+    font-size: 14px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    color: #2d3748;
+    line-height: 1.8;
+  }
+  .module-chunk:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+  /* ── Policy info table ── */
+  .policy-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 12px;
+  }
+  .policy-table th {
+    background: #edf2f7;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+    border: 1px solid #e2e8f0;
+  }
+  .policy-table td {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    vertical-align: top;
+  }
+  .policy-table tr:nth-child(even) td { background: #f8fafc; }
+
+  /* ── Status tags ── */
+  .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .3px;
+  }
+  .tag-red    { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+  .tag-yellow { background: #fffff0; color: #b7791f; border: 1px solid #fefcbf; }
+  .tag-green  { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  .tag-blue   { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+
+  /* ── Summary cards ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .summary-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .summary-card .num { font-size: 32px; font-weight: 700; color: #2563a8; }
+  .summary-card .label { font-size: 12px; color: #718096; margin-top: 4px; }
+
+  /* ── Print ── */
+  @media print {
+    body { background: #fff; }
+    .site-header { background: #1a3a5c !important; -webkit-print-color-adjust: exact; }
+    .case-section, .module-section, .toc, .summary-card { box-shadow: none; }
+  }
+
+  /* ── Download button ── */
+  .dl-bar {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  }
+  .dl-bar p { font-size: 13px; color: #718096; }
+  .btn-dl {
+    background: #2563a8;
+    color: #fff;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-dl:hover { background: #1d4e8f; }
+</style>
+</head>
+<body>
+
+<!-- ══ Header ══ -->
+<header class="site-header">
+  <div class="logo-row">
+    <div class="logo-icon">🏢</div>
+    <div>
+      <h1>Everbest Insurance and Financial Services Limited</h1>
+      <div class="subtitle">永最保險及財務服務有限公司 (FB1451) · Room 907B, 9/F., Tower 1, Silvercord, 30 Canton Road, Tsimshatsui, Kowloon, HK</div>
+    </div>
+  </div>
+  <div class="meta">
+    <span>📋 EIFS 客戶個案分析報告</span>
+    <span>📅 報告日期：2026-05-21</span>
+    <span>📞 852-3923 9927</span>
+    <span>✉️ cs@eifs.com.hk</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ══ Download bar ══ -->
+  <div class="dl-bar">
+    <p>本報告包含 4 個客戶個案 + 客戶服務框架 + 系統數據需求，可直接列印或另存為 HTML。</p>
+    <button class="btn-dl" onclick="window.print()">🖨️ 列印 / 另存 PDF</button>
+  </div>
+
+  <!-- ══ Summary cards ══ -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="num">4</div>
+      <div class="label">活躍客戶個案</div>
+    </div>
+    <div class="summary-card">
+      <div class="num">6</div>
+      <div class="label">相關保單</div>
+    </div>
+    <div class="summary-card">
+      <div class="num">2</div>
+      <div class="label">涉及保險公司</div>
+    </div>
+    <div class="summary-card">
+      <div class="num">45</div>
+      <div class="label">文件知識片段</div>
+    </div>
+  </div>
+
+  <!-- ══ Table of Contents ══ -->
+  <div class="toc">
+    <h2>目錄</h2>
+    <ol>
+      <li><a href="#case-a">個案 A — CHEN HAN CHUNG 解約申請 (保單 303-3357033)</a></li>
+      <li><a href="#case-b">個案 B — KHEMANEY PREM HASSARAM 自動扣款未成功 (保單 503-6183969)</a></li>
+      <li><a href="#case-c">個案 C — KHEMANEY PREM HASSARAM 保費到期確認 (保單群組)</a></li>
+      <li><a href="#case-d">個案 D — WANG JING 友邦自動轉賬失敗 (保單 G681502286)</a></li>
+      <li><a href="#framework">客戶服務部 API 對話框架 (2026版)</a></li>
+      <li><a href="#sysdata">系統數據需求清單</a></li>
+    </ol>
+  </div>
+
+  <!-- ══════════════════════════════
+       個案 A
+  ══════════════════════════════ -->
+  <div class="case-section" id="case-a">
+    <div class="case-header">
+      <div class="case-badge badge-a">A</div>
+      <div>
+        <div class="case-title">CHEN HAN CHUNG 解約申請</div>
+        <div class="case-meta">
+          <span>📋 保單號：303-3357033</span>
+          <span>🏦 保險公司：AXA 安盛</span>
+          <span>📅 個案日期：2026-05-05 ~ 2026-05-06</span>
+          <span><span class="tag tag-red">解約進行中</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="case-body">
+      <table class="policy-table" style="margin-bottom:20px">
+        <tr><th>項目</th><th>內容</th></tr>
+        <tr><td>保單號碼</td><td>303-3357033</td></tr>
+        <tr><td>客戶姓名</td><td>CHEN HAN CHUNG</td></tr>
+        <tr><td>投保人聯絡</td><td>林 小楓 &lt;b952lin@yahoo.com.tw&gt;</td></tr>
+        <tr><td>主要事項</td><td>解約申請、地址更新、電匯至台灣銀行（兆豐銀行外幣帳號）</td></tr>
+        <tr><td>所需文件</td><td>身分證 + 生效中護照（必須）、填寫地址更新表格、電匯申請書（英文）</td></tr>
+        <tr><td>解約款項</td><td>港元計價，電匯至台灣銀行外幣帳號，帳戶持有人姓名需與銀行證明一致</td></tr>
+        <tr><td>備注</td><td>原護照已過期，需先辦理新護照方可辦理解約</td></tr>
+      </table>
+
+      <div class="thread">
+        <div class="msg eifs">
+          <div class="msg-sender">EIFS 客服 → 客戶 (2026-05-06 09:43)</div>Dear Client,
+1. 一定要給身分證及護照，請辦新的生效中的護照
+2. 解約明細：請填寫附件（AXA_LFPA012-2511 Policy Service Application Form I-V2 Fillable.pdf），更新正確地址後，可寄至最新通訊地址
+3. 解約款項為港元，請電匯至台灣銀行外幣帳號（帳戶持有人姓名及完整銀行帳號必須與銀行證明一致）
+4. 電匯表格請以英文填寫（如無英文姓名，銀行帳戶持有人姓名僅需填寫中文）
+5. 如無其他資訊，請提供收款銀行詳細資訊（SWIFT/中間行等）
+
+多謝！
+客戶服務 Everbest Insurance and Financial Services Limited</div>
+
+        <div class="msg client">
+          <div class="msg-sender">客戶 林 小楓 → EIFS (2026-05-05 13:42)</div>麻煩這件保單也要 保單週年報告
+問題：
+1. 解約要電匯，原來是港幣計價，解約一樣用港幣給台灣的外幣帳號存摺封面對嗎？
+2. 之前買保單，要保人：我自己；被保險人 兒子9歲，所以解約是要再給要保人身分證？另一份要、被保險人同一人，去香港現場簽約，應該沒有過身分證，當下是給護照吧！所以解約都要再給身分證嗎？
+3. 電匯申請書受款人帳號、帳號名稱、地址都要寫英文嗎？SWIFT代號已知，有關中間轉帳銀行SWIFT代號，台灣兆豐銀行行員說：你們只要能匯入台灣外幣帳號，給你們兆豐的SWIFT代號，至於中間行，由匯款銀行決定，不是受款行可以要求的。</div>
+
+        <div class="msg aia">
+          <div class="msg-sender">AXA 電子文件通知 (2026-05-04 00:18)</div>親愛的客戶：
+保單編號：303-3357033
+您的電子文件 — 保單週年報告已備妥。
+請於手機應用程式或網頁 www.axa.com.hk/zh/em 查閱。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       個案 B
+  ══════════════════════════════ -->
+  <div class="case-section" id="case-b">
+    <div class="case-header">
+      <div class="case-badge badge-b">B</div>
+      <div>
+        <div class="case-title">KHEMANEY PREM HASSARAM — 自動扣款未能成功收取</div>
+        <div class="case-meta">
+          <span>📋 保單號：503-6183969</span>
+          <span>🏦 保險公司：AXA 安盛</span>
+          <span>📅 個案日期：2026-05-09 ~ 2026-05-11</span>
+          <span><span class="tag tag-yellow">待確認下年保費</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="case-body">
+      <table class="policy-table" style="margin-bottom:20px">
+        <tr><th>項目</th><th>內容</th></tr>
+        <tr><td>保單號碼</td><td>503-6183969</td></tr>
+        <tr><td>被保險人</td><td>AKSHAY KHEMANEY</td></tr>
+        <tr><td>聯絡人</td><td>Prem Khemaney（WhatsApp: +852 6992 1943）</td></tr>
+        <tr><td>問題</td><td>2026年4月30日到期保費未能透過自動扣款收取</td></tr>
+        <tr><td>跟進狀況</td><td>EIFS 跟進中，詢問下年（2027年4月30日到期）保費帳戶餘額是否充足</td></tr>
+        <tr><td>副本</td><td>Compliance EIFS &lt;eifscompliance@gmail.com&gt;、RH Admin &lt;mail@rhassaram.com&gt;</td></tr>
+      </table>
+
+      <div class="thread">
+        <div class="msg eifs">
+          <div class="msg-sender">EIFS 客服 → 客戶 (2026-05-11 14:49)</div>Dear Client,
+Is there sufficient balance for the next year premium due on 30th April 2027?
+
+多謝！
+客戶服務 Everbest Insurance and Financial Services Limited
+Room 907B, 9/F., Tower 1, Silvercord, 30 Canton Road, Tsimshatsui, Kowloon, HK
+Tel: 852-3923 9927</div>
+
+        <div class="msg client">
+          <div class="msg-sender">Prem Khemaney → EIFS (2026-05-11 12:31)</div>Thank you very much.
+Prem Khemaney | WhatsApp: +852 6992 1943</div>
+
+        <div class="msg client">
+          <div class="msg-sender">Prem Khemaney → EIFS (2026-05-09 04:05)</div>Premium for Policy 503-6183969 AKSHAY KHEMANEY, due 30th April 2026, has not been collected by AUTOPAY.
+Thanking you,
+Sincerely Prem Khemaney | WhatsApp: +852 6992 1943</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       個案 C
+  ══════════════════════════════ -->
+  <div class="case-section" id="case-c">
+    <div class="case-header">
+      <div class="case-badge badge-c">C</div>
+      <div>
+        <div class="case-title">KHEMANEY PREM HASSARAM — 多張保單保費到期確認</div>
+        <div class="case-meta">
+          <span>📋 保單群組：503-6183936 / 503-6183902 / 503-6183969 / 503-7319596 / 503-5803781</span>
+          <span>🏦 保險公司：AXA 安盛</span>
+          <span>📅 個案日期：2026-04-14 ~ 2026-04-20</span>
+          <span><span class="tag tag-green">已確認收妥</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="case-body">
+      <table class="policy-table" style="margin-bottom:20px">
+        <tr><th>保單號碼</th><th>付款方式</th><th>到期日</th><th>自動扣款</th><th>保費（USD）</th><th>港元等值</th></tr>
+        <tr><td>503-6183936</td><td>每年一次</td><td>2026/04/19</td><td>✅ 是</td><td>USD 5,237.37</td><td>HKD 41,374.00</td></tr>
+        <tr><td>503-6183902</td><td>每年一次</td><td>2026/04/25</td><td>✅ 是</td><td>—</td><td>—</td></tr>
+        <tr><td>503-6183969</td><td>每年一次</td><td>2026/04/25</td><td>✅ 是</td><td>—</td><td>—</td></tr>
+        <tr><td>503-7319596</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><td>503-5803781</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      </table>
+
+      <p style="font-size:13px;color:#718096;margin-bottom:16px">匯率參考：USD : HKD = 1 : 7.90000（AXA 記錄）</p>
+
+      <div class="thread">
+        <div class="msg eifs">
+          <div class="msg-sender">EIFS 客服 → 客戶 (2026-04-14)</div>Dear Sir,
+根據 AXA 記錄，自動扣款規則如下：
+• 保費到期日為1-15日：轉賬日為當月2日
+• 保費到期日為16-28日：轉賬日為當月16日
+
+保單 503-6183936 到期日為 4/19，已設定自動扣款。
+Best Regards,
+Customer Service Department, Everbest Insurance and Financial Services Limited (FB1451)
+Tel: 852-3923 9900</div>
+
+        <div class="msg client">
+          <div class="msg-sender">Prem Khemaney → EIFS (2026-04-15)</div>Dear Sirs, So may I request you to please confirm as soon as the following premiums are collected:
+• AXA 503-6183936 due 19th April
+• AXA 503-6183902 due 25th April
+• AXA 503-6183969 due 25th April
+Thanking you, Sincerely, Prem Khemaney | WhatsApp: +852 6992 1943</div>
+
+        <div class="msg client">
+          <div class="msg-sender">Prem Khemaney → EIFS (2026-04-20 09:56)</div>Dear Sirs, Please confirm that the premium for policy 6183936 has been collected.</div>
+
+        <div class="msg eifs">
+          <div class="msg-sender">EIFS 客服 → 客戶 (2026-04-20 10:48)</div>Dear Client,
+1/ AXA is waiting report from Bank, it may result at the end of this week.
+2/ You can check your bank account that the premium has been deducted or not.
+多謝！
+客戶服務 Everbest Insurance and Financial Services Limited</div>
+
+        <div class="msg client">
+          <div class="msg-sender">Prem Khemaney → EIFS (2026-04-20 16:43)</div>Dear Sirs, I have checked with the bank and have been advised debit of [premium] has been done.
+Prem Khemaney | WhatsApp: +852 6992 1943</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       個案 D
+  ══════════════════════════════ -->
+  <div class="case-section" id="case-d">
+    <div class="case-header">
+      <div class="case-badge badge-d">D</div>
+      <div>
+        <div class="case-title">WANG JING (王景) — 友邦自動轉賬失敗：餘額不足</div>
+        <div class="case-meta">
+          <span>📋 保單號：G681502286</span>
+          <span>🏦 保險公司：AIA 友邦</span>
+          <span>📅 個案日期：2026-03-10 ~ 2026-03-20</span>
+          <span><span class="tag tag-green">已解決（4月初重新扣款）</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="case-body">
+      <table class="policy-table" style="margin-bottom:20px">
+        <tr><th>項目</th><th>內容</th></tr>
+        <tr><td>保單號碼</td><td>G681502286</td></tr>
+        <tr><td>保單持有人</td><td>WANG JING（王景）</td></tr>
+        <tr><td>聯絡郵件</td><td>wang jing Sabrina &lt;a1826@hotmail.com&gt;</td></tr>
+        <tr><td>問題</td><td>2026-03 自動轉賬因餘額不足被拒絕（AIA Ref: 2026:EADV:G681502286）</td></tr>
+        <tr><td>保費到期日</td><td>2026-03-15</td></tr>
+        <tr><td>保費寬限期</td><td>AIA 有保費寬限期，不會立即中斷保障</td></tr>
+        <tr><td>解決方案</td><td>保司在4月初重新扣款，請保持帳戶充足港幣</td></tr>
+      </table>
+
+      <div class="thread">
+        <div class="msg aia">
+          <div class="msg-sender">AIA Brokerage &amp; IFA Services → EIFS (自動通知)</div>Dear Business Partner of AIA,
+We would like to inform you that the premium collection via autopay was rejected on below policy.
+Policy No.: G681502286 | Owner surname: WANG | Reason: Insufficient Funds
+
+If autopay is rejected twice and its policy status is lapsed, please inform client to arrange policy reinstatement.
+Queries: 3972 8899 / hk.brokerenquiry@aia.com
+Best Regards, Brokerage &amp; IFA Services Department, AIA International Limited</div>
+
+        <div class="msg eifs">
+          <div class="msg-sender">EIFS 客服 → 客戶 (2026-03-10)</div>Dear Client,
+G681502286_WANG JING(王景) — 友邦自動轉賬失敗，原因：沒有足夠港幣！
+保司會再扣一次，請保持足夠港幣！
+多謝！
+客戶服務 Everbest Insurance and Financial Services Limited</div>
+
+        <div class="msg client">
+          <div class="msg-sender">Wang Jing Sabrina → EIFS (2026-03-13 13:34)</div>您好！請問能否確認保司將於何時再次扣款。剛剛查詢了一下帳戶餘額是充足的。</div>
+
+        <div class="msg client">
+          <div class="msg-sender">Wang Jing Sabrina → EIFS (2026-03-13 19:41)</div>請問能安排3月15日之前扣款嗎？否則保險有可能中斷。謝謝！</div>
+
+        <div class="msg eifs">
+          <div class="msg-sender">EIFS 客服 → 客戶 (2026-03-13 14:35)</div>Dear Wang,
+一般保險公司會在每月的1-5號或15-20號之間扣款。
+請保持足夠港幣！謝謝。
+客戶服務 Everbest Insurance and Financial Services Limited</div>
+
+        <div class="msg eifs">
+          <div class="msg-sender">EIFS 客服 → 客戶 (2026-03-20 10:23)</div>Dear Client,
+1/ 保司會在4月頭扣錢，請保持足夠港幣！
+2/ 在4月頭扣錢，保單有保費寬限期，不會中斷。
+多謝！
+客戶服務 Everbest Insurance and Financial Services Limited</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       客戶服務 API 框架
+  ══════════════════════════════ -->
+  <div class="module-section" id="framework">
+    <div class="module-header">📖 保險客戶服務部 — 自動回覆與售後話術庫（2026版）</div>
+    <div class="module-body">
+
+      <div class="module-chunk"><strong>模組一：續保與續期保費 (Premium &amp; Renewal)</strong>
+
+【1.1】主動發送：繳費期溫馨提示
+系統觸發條件：保單到期日前 15-30 天自動推送。
+
+客服/機械人發送：
+您好，[客戶姓名]，您的保單即將到期並進入繳費期。為確保您的保障持續有效，請留意以下事項：
+
+💡 自動扣款：如果您有關聯銀行帳戶自動扣款，請確保帳戶餘額充足，避免斷保影響保障。
+💳 自行繳費：如果您用其他方式繳費，請把繳費憑證提供給我們去核帳。謝謝！
+
+[ 🔘 查看繳費方法 ]  [ 🔘 上傳繳費憑證 ]
+
+【1.2】客戶查詢：如何確認保費是否到帳？
+客服回覆：您可將繳費憑證（截圖或收據）給我們。收到後，我們會立刻為您提交至保司後台核帳。
+[ 🔘 上傳憑證 ]  [ 🔘 返回主選單 ]</div>
+
+      <div class="module-chunk"><strong>模組二：更改資料 (Policy Alteration)</strong>
+
+【2.1】主選單：您想變更哪種資料？
+客服回覆：您好，[客戶姓名]，請問您需要變更以下哪項保單資料？
+[ 🔘 變更電子郵箱 ]  [ 🔘 變更通訊地址/電話 ]  [ 🔘 變更受益人 ]
+
+【2.2】細分：變更電子郵箱/通訊地址/電話
+• 可透過保司APP線上更新（部分變更支援）
+• 填寫附件表格寄回原件，審核時間 4-6 週
+
+【2.3】細分：變更受益人（線下嚴謹流程）
+客服回覆：您好，變更保單受益人涉及法律權益，無法透過APP線上變更。必須填寫專用紙本變更表格，並由投保人與新受益人親自簽署原件郵寄辦理。審核時間約 4-6 週。
+[ 🔘 下載變更受益人表格 ]  [ 🔘 查看填寫範例 ]</div>
+
+      <div class="module-chunk"><strong>模組三：理賠協助 (Claims Assistance)</strong>
+
+[ 🔘 重大疾病理賠 ]  [ 🔘 醫療住院理賠 ]  [ 🔘 身故理賠協助 ]
+
+【3.2】重大疾病理賠（嚴格審查）
+客服回覆：[客戶姓名] 您好，辦理重大疾病理賠，請準備：
+① 理賠申請書（原件，填妥附件表格）
+② 病歷副本（含入院記錄、病歷記錄、出院記錄）
+
+⚠️ 防呆提示：
+• 醫生簽署：「簽名（蓋印）」部份需要醫生簽署和蓋印，否則保司將有機會不受理
+• 見證人欄：所有表格內如有見証人欄必須填寫及簽署，不可留白（見證人不可是親屬）
+
+理賠需時約 6-8 個星期。
+[ 🔘 下載重疾理賠表格 ]  [ 🔘 下載退回正本表格 ]  [ 🔘 查詢內地指定醫院名單 ]
+
+【3.3】理賠款項發放（跨境諮詢）
+• 方式一：銀行轉帳 — 需持有人名下香港銀行帳戶
+• 方式二：支票支付 — 寄到通訊地址，需親自到香港兌換</div>
+
+      <div class="module-chunk"><strong>模組四/五（保費壓力與保單活化）</strong>
+
+【退保挽留話術示例】
+于小姐您好，很能理解您現在的心情和壓力，我先幫您查詢一下保單情況。
+
+🔎 保單客製化分析（示例）：
+您保單是 2017 年購買的，供款年期是 18 年，到目前您已經供到第 10 年。如果現在選擇退保的話非常不劃算！因為這是保障類型（重疾）的產品，分紅部分比較少，現在退保能退回的金額很少，而且會立刻失去健康保障。
+
+🛠️ 舒緩保費壓力的替代方案：
+• 方案一：申請降低保額，少交點保費，減輕目前負擔
+• 方案二：減額交清 (Paid-up)，用保單現有價值清繳餘下保費
+（建議：如供款已達10年，再堅持一下，退保時機後期更划算）
+
+【保單提領話術示例（財務周轉）】
+張先生，您好，明白您的周轉需求。請您填寫及簽署以下附件，並將原件寄回我們：
+① 更改保單財務申請表格（溫馨提示：建議不要寫日期）
+② 銀行帳戶證明（三個月內月結單）
+③ 身份證及通行證副本
+
+📢 專業溫馨提示：
+一般不建議太早提領，因為太早提領對保單後期收益影響比較大。5年期產品，一般建議第 10 年開始提領會更好。
+[ 🔘 下載財務申請表格 ]</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       系統數據需求
+  ══════════════════════════════ -->
+  <div class="module-section" id="sysdata">
+    <div class="module-header">📊 系統數據需求清單（保單管理系統字段規格）</div>
+    <div class="module-body">
+      <p style="font-size:13px;color:#718096;margin-bottom:16px">以下為保單管理系統所需的完整字段清單（來源：系統數據需要.xlsx）：</p>
+
+      <div style="overflow-x:auto">
+        <table class="policy-table">
+          <tr><th>分類</th><th>字段名稱（部分列示）</th></tr>
+          <tr>
+            <td>基本保單信息</td>
+            <td>保單號碼*、合約日期*、冷靜期結束日期、簽單日期、遞交日期、繕發日期*、首期保費日、首期實際繳費日期、下期保費日、付清日期</td>
+          </tr>
+          <tr>
+            <td>業務信息</td>
+            <td>業務來源、處理人、積存期、供應渠道*、供應渠道碼*、是否融資、融資金額、融資銀行名稱、是否電子保單</td>
+          </tr>
+          <tr>
+            <td>業務代表</td>
+            <td>Team Head、業務代表1、業務代表2、服務代表1、服務代表2、用戶賬號*、用戶姓名</td>
+          </tr>
+          <tr>
+            <td>投保人信息</td>
+            <td>投保人客戶編號、申請人類型*、投保人中/英文姓名*、出生日期、稱謂、國籍、教育程度、吸煙習慣、身份證號、通行證號碼、護照號碼、通訊/居住/戶籍地址、公司名稱及行業、是否合資格投資者、是否擁有其他國家公民身份</td>
+          </tr>
+          <tr>
+            <td>受保人信息</td>
+            <td>受保人客戶編號、受保人類型、受保人中/英文姓名*、出生日期、投保時年齡、國籍、教育程度、吸煙習慣、風險偏好、聯繫電話、各地址、與投保人關係*</td>
+          </tr>
+          <tr>
+            <td>受益人信息</td>
+            <td>受益人1客戶編號、受益人1中/英文姓名、身份證號/出生證、性別、與受保人關係*、受益比例、備註</td>
+          </tr>
+          <tr>
+            <td>保費與付款</td>
+            <td>每期保費*、保額*、貨幣*、付款頻率*、首期付款方式、續期付款方式、預繳保費、預付額、折扣後預付額、DDA、銀行編號、銀行卡號、持卡人姓名及身份證號</td>
+          </tr>
+          <tr>
+            <td>產品信息</td>
+            <td>產品名稱*、產品類型*、產品碼*、保險公司碼*</td>
+          </tr>
+          <tr>
+            <td>郵寄狀態</td>
+            <td>保單郵寄備註、保單郵寄狀態、保險公司寄出日期、客戶簽收日期、運單號</td>
+          </tr>
+          <tr>
+            <td>法規合規</td>
+            <td>投保人/受保公司是否合資格投資者、是否擁有其他國家公民身份（如美國、日本等）、是否願意接受電郵推廣宣傳</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Footer ══ -->
+  <div style="text-align:center;font-size:12px;color:#a0aec0;padding-top:24px;border-top:1px solid #e2e8f0;margin-top:8px">
+    <p>Everbest Insurance and Financial Services Limited (FB1451)</p>
+    <p>Room 907B, 9/F., Tower 1, Silvercord, 30 Canton Road, Tsimshatsui, Kowloon, Hong Kong</p>
+    <p>Tel: 852-3923 9927 | cs@eifs.com.hk</p>
+    <p style="margin-top:8px">本報告由系統自動生成，僅供內部參考使用。報告日期：2026-05-21</p>
+  </div>
+
+</div>
+</body>
+</html>

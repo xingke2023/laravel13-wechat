@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["paper.xingke888.com"],
+  allowedDevOrigins: ["ai.cxfortune.com"],
 };
 
 export default nextConfig;

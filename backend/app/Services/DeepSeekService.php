@@ -57,14 +57,18 @@ class DeepSeekService
     }
 
     /**
-     * Streaming version: invokes $onChunk($delta, $kind) per piece from DeepSeek.
-     * $kind is 'content' for the final answer or 'reasoning' for the model's chain-of-thought.
+     * Streaming version: invokes $onChunk($delta, $kind) for each text piece ('content' / 'reasoning').
      *
-     * @param  array<int, array{role: string, content: string}>  $messages
+     * Tool-call deltas are NOT forwarded to $onChunk — they're accumulated and returned so the
+     * caller can execute tools and decide whether to make another round-trip.
+     *
+     * @param  array<int, array{role: string, content?: string|null, tool_calls?: array, tool_call_id?: string, name?: string}>  $messages
      * @param  array{model?: string, max_tokens?: int, temperature?: float}  $opts
      * @param  callable(string, string): void  $onChunk
+     * @param  array<int, array<string, mixed>>|null  $tools  OpenAI-style tools list (null disables function calling)
+     * @return array{finish_reason: ?string, content: string, reasoning_content: string, tool_calls: array<int, array{id: string, type: string, function: array{name: string, arguments: string}}>}
      */
-    public function chatStream(array $messages, array $opts, callable $onChunk): void
+    public function chatStream(array $messages, array $opts, callable $onChunk, ?array $tools = null): array
     {
         if (! $this->hasApiKey()) {
             throw new RuntimeException('DEEPSEEK_API_KEY is not configured.');
@@ -86,9 +90,19 @@ class DeepSeekService
         if (isset($opts['temperature'])) {
             $payload['temperature'] = (float) $opts['temperature'];
         }
+        if (! empty($tools)) {
+            $payload['tools'] = array_values($tools);
+            $payload['tool_choice'] = 'auto';
+        }
 
         $buffer = '';
         $errorBody = '';
+
+        // Accumulators for the return value.
+        $accumulatedContent = '';
+        $accumulatedReasoning = '';
+        $toolCallsByIndex = [];   // index => ['id'=>..., 'type'=>..., 'function'=>['name'=>..., 'arguments'=>...]]
+        $finishReason = null;
 
         $ch = curl_init("{$baseUrl}/chat/completions");
         curl_setopt_array($ch, [
@@ -101,7 +115,15 @@ class DeepSeekService
             CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
             CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_WRITEFUNCTION => function ($curl, $data) use (&$buffer, &$errorBody, $onChunk) {
+            CURLOPT_WRITEFUNCTION => function ($curl, $data) use (
+                &$buffer,
+                &$errorBody,
+                &$accumulatedContent,
+                &$accumulatedReasoning,
+                &$toolCallsByIndex,
+                &$finishReason,
+                $onChunk,
+            ) {
                 $httpCode = curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
                 if ($httpCode !== 0 && $httpCode !== 200) {
                     $errorBody .= $data;
@@ -128,14 +150,49 @@ class DeepSeekService
                     if (! is_array($decoded)) {
                         continue;
                     }
-                    $deltaObj = $decoded['choices'][0]['delta'] ?? [];
+                    $choice = $decoded['choices'][0] ?? [];
+                    $deltaObj = $choice['delta'] ?? [];
+
+                    if (isset($choice['finish_reason']) && $choice['finish_reason'] !== null) {
+                        $finishReason = (string) $choice['finish_reason'];
+                    }
+
                     $content = $deltaObj['content'] ?? null;
                     $reasoning = $deltaObj['reasoning_content'] ?? null;
                     if (is_string($content) && $content !== '') {
+                        $accumulatedContent .= $content;
                         $onChunk($content, 'content');
                     }
                     if (is_string($reasoning) && $reasoning !== '') {
+                        $accumulatedReasoning .= $reasoning;
                         $onChunk($reasoning, 'reasoning');
+                    }
+
+                    $toolCallDeltas = $deltaObj['tool_calls'] ?? null;
+                    if (is_array($toolCallDeltas)) {
+                        foreach ($toolCallDeltas as $tcd) {
+                            $idx = (int) ($tcd['index'] ?? 0);
+                            if (! isset($toolCallsByIndex[$idx])) {
+                                $toolCallsByIndex[$idx] = [
+                                    'id' => '',
+                                    'type' => 'function',
+                                    'function' => ['name' => '', 'arguments' => ''],
+                                ];
+                            }
+                            if (isset($tcd['id']) && is_string($tcd['id']) && $tcd['id'] !== '') {
+                                $toolCallsByIndex[$idx]['id'] = $tcd['id'];
+                            }
+                            if (isset($tcd['type']) && is_string($tcd['type'])) {
+                                $toolCallsByIndex[$idx]['type'] = $tcd['type'];
+                            }
+                            $fn = $tcd['function'] ?? [];
+                            if (isset($fn['name']) && is_string($fn['name']) && $fn['name'] !== '') {
+                                $toolCallsByIndex[$idx]['function']['name'] = $fn['name'];
+                            }
+                            if (isset($fn['arguments']) && is_string($fn['arguments'])) {
+                                $toolCallsByIndex[$idx]['function']['arguments'] .= $fn['arguments'];
+                            }
+                        }
                     }
                 }
 
@@ -156,5 +213,14 @@ class DeepSeekService
                 'DeepSeek API error '.$httpCode.': '.($errorBody !== '' ? $errorBody : 'no body')
             );
         }
+
+        ksort($toolCallsByIndex);
+
+        return [
+            'finish_reason' => $finishReason,
+            'content' => $accumulatedContent,
+            'reasoning_content' => $accumulatedReasoning,
+            'tool_calls' => array_values($toolCallsByIndex),
+        ];
     }
 }
