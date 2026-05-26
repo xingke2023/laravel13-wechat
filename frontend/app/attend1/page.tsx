@@ -1,8 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { attendeesApi, type AttendeeInput } from '@/lib/api/attendees';
+
+type GroupKey = NonNullable<AttendeeInput['group_key']>;
+
+const GROUP_PARAM_TO_KEY: Record<string, GroupKey> = {
+  '1': 'group1',
+  '2': 'group2',
+  '3': 'group3',
+  group1: 'group1',
+  group2: 'group2',
+  group3: 'group3',
+};
+
+const GROUP_LABEL: Record<GroupKey, string> = {
+  group1: '开业仪式',
+  group2: '保誠',
+  group3: '晚餐',
+};
 
 const INDUSTRIES = ['金融', '保险', '医疗', '教育', '互联网', '制造', '房地产', '咨询', '其他'];
 
@@ -17,12 +34,18 @@ const GOLD_HOVER = '#d49018';
 
 export default function AttendPage() {
   const router = useRouter();
-  const [form, setForm] = useState<AttendeeInput>({ name: '', phone: '', industry: '', email: '' });
+  const [form, setForm] = useState<AttendeeInput>({ name: '', phone: '', industry: '', company: '', email: '' });
   const [dialCode, setDialCode] = useState('86');
   const [phoneDigits, setPhoneDigits] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [groupKey, setGroupKey] = useState<GroupKey>('group1');
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('group');
+    if (raw && GROUP_PARAM_TO_KEY[raw]) setGroupKey(GROUP_PARAM_TO_KEY[raw]);
+  }, []);
 
   const update = (key: keyof AttendeeInput) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -62,10 +85,14 @@ export default function AttendPage() {
         industry: form.industry.trim(),
         source: 'web',
       };
+      const company = (form.company ?? '').trim();
+      if (company) payload.company = company;
       const email = (form.email ?? '').trim();
       if (email) payload.email = email;
+      payload.group_key = groupKey;
       await attendeesApi.create(payload);
-      router.push('/attend1/success');
+      const tabNum = groupKey.replace('group', '');
+      router.push(`/attend1/success?tab=${tabNum}`);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : '提交失败，请稍后重试');
     } finally {
@@ -91,8 +118,41 @@ export default function AttendPage() {
             <SuccessPanel name={form.name} />
           ) : (
             <>
-              <h1 style={{ color: NAVY, fontSize: 22, fontWeight: 700, margin: '0 0 6px', textAlign: 'center' }}>参会登记</h1>
-              <p style={{ color: '#6b7a99', fontSize: 13, margin: '0 0 24px', textAlign: 'center' }}>请填写您的信息，主办方将与您联系</p>
+              <h1 style={{ color: NAVY, fontSize: 22, fontWeight: 700, margin: '0 0 14px', textAlign: 'center' }}>参会登记</h1>
+              <p style={{ color: '#6b7a99', fontSize: 12, margin: '0 0 8px', textAlign: 'center' }}>报名群组</p>
+              <div role="tablist" style={{ display: 'flex', gap: 4, background: '#f4f7fb', padding: 3, borderRadius: 8, margin: '0 auto 20px', maxWidth: 260 }}>
+                {(Object.keys(GROUP_LABEL) as GroupKey[]).map((key) => {
+                  const isActive = key === groupKey;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      onClick={() => setGroupKey(key)}
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        padding: '4px 6px',
+                        fontSize: 11,
+                        lineHeight: 1.3,
+                        fontWeight: 600,
+                        color: isActive ? '#fff' : '#374a6b',
+                        background: isActive ? NAVY : 'transparent',
+                        border: 'none',
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        transition: 'background 0.15s, color 0.15s',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {GROUP_LABEL[key]}
+                    </button>
+                  );
+                })}
+              </div>
 
               <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <Field label="姓名" required>
@@ -153,6 +213,18 @@ export default function AttendPage() {
                       <option key={it} value={it}>{it}</option>
                     ))}
                   </select>
+                </Field>
+
+                <Field label="工作单位">
+                  <input
+                    type="text"
+                    value={form.company ?? ''}
+                    onChange={update('company')}
+                    placeholder="请输入您的工作单位"
+                    maxLength={100}
+                    autoComplete="organization"
+                    style={inputStyle}
+                  />
                 </Field>
 
                 <Field label="邮箱（选填）">

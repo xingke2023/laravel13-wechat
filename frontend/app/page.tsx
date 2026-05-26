@@ -1,17 +1,30 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { OnboardingChat } from '@/components/onboarding-chat';
 
+const GROUP_TABS = [
+  { key: 'group1', label: '开业仪式', param: '1' },
+  { key: 'group2', label: '保誠',     param: '2' },
+  { key: 'group3', label: '晚餐',     param: '3' },
+];
+
 export default function Home() {
   const [chatOpen, setChatOpen] = useState(false);
-  const [attendUrl, setAttendUrl] = useState('/attend1');
+  const [origin, setOrigin] = useState('');
   const [copied, setCopied] = useState(false);
+  const [activeGroup, setActiveGroup] = useState(GROUP_TABS[0].key);
+  const currentGroup = GROUP_TABS.find((t) => t.key === activeGroup) ?? GROUP_TABS[0];
 
   useEffect(() => {
-    setAttendUrl(`${window.location.origin}/attend1`);
+    setOrigin(window.location.origin);
   }, []);
+
+  const attendUrl = useMemo(
+    () => `${origin || ''}/attend1?group=${currentGroup.param}`,
+    [origin, currentGroup.param],
+  );
 
   const copyLink = async () => {
     try {
@@ -94,14 +107,46 @@ export default function Home() {
         </div>
       </section>
 
-      {/* QR — scan to register as attendee */}
+      {/* QR — scan to join event group */}
       <section style={{ background: '#fff', padding: '56px 32px', borderTop: '1px solid #eaeef5' }}>
         <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 48 }}>
-          <div style={{ background: '#f4f7fb', padding: 20, borderRadius: 16, boxShadow: '0 4px 20px rgba(26,58,107,0.08)', textAlign: 'center' }}>
-            <div style={{ background: '#fff', padding: 12, borderRadius: 10, display: 'inline-block', border: '1px solid #e3e8f2' }}>
-              <QRCodeSVG value={attendUrl} size={200} level="M" marginSize={2} />
+          <div style={{ background: '#f4f7fb', padding: 20, borderRadius: 16, boxShadow: '0 4px 20px rgba(26,58,107,0.08)', width: 280, boxSizing: 'border-box' }}>
+            <div role="tablist" style={{ display: 'flex', gap: 6, background: '#fff', padding: 4, borderRadius: 10, marginBottom: 14, border: '1px solid #e3e8f2' }}>
+              {GROUP_TABS.map((tab) => {
+                const isActive = tab.key === activeGroup;
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveGroup(tab.key)}
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      padding: '7px 4px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: isActive ? '#fff' : '#374a6b',
+                      background: isActive ? '#1a3a6b' : 'transparent',
+                      border: 'none',
+                      borderRadius: 7,
+                      cursor: 'pointer',
+                      transition: 'background 0.15s, color 0.15s',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
-            <p style={{ color: '#6b7a99', fontSize: 12, margin: '12px 0 0' }}>微信「扫一扫」或手机相机扫码</p>
+            <div style={{ background: '#fff', padding: 12, borderRadius: 10, border: '1px solid #e3e8f2', textAlign: 'center' }}>
+              <QRCodeSVG key={currentGroup.key} value={attendUrl} size={200} level="M" marginSize={2} />
+            </div>
+            <p style={{ color: '#6b7a99', fontSize: 12, margin: '12px 0 0', textAlign: 'center' }}>扫码进入「{currentGroup.label}」报名页</p>
           </div>
           <div style={{ maxWidth: 380, flex: '1 1 280px' }}>
             <div style={{ display: 'inline-block', background: 'rgba(232,160,32,0.15)', color: '#a96f12', borderRadius: 16, padding: '4px 14px', fontSize: 12, fontWeight: 600, marginBottom: 14, letterSpacing: 1 }}>
@@ -109,7 +154,7 @@ export default function Home() {
             </div>
             <h2 style={{ color: '#1a3a6b', fontSize: 26, fontWeight: 700, margin: '0 0 12px', lineHeight: 1.3 }}>扫码报名参会</h2>
             <p style={{ color: '#6b7a99', fontSize: 15, lineHeight: 1.7, margin: '0 0 20px' }}>
-              请客户使用微信扫一扫上方二维码，填写姓名、手机号与所在行业即可完成参会登记，主办方将统一收到您的登记信息并尽快联系。
+              请客户根据所属群组切换上方标签，使用微信扫一扫对应二维码进入报名表，填写完成后将自动加入「{currentGroup.label}」。
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <button

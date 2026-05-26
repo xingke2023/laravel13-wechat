@@ -27,8 +27,9 @@ Route::middleware('throttle:30,1')->group(function () {
     Route::post('/ai/guest-chat-stream', [AiController::class, 'chatStream']);
 });
 
-// Public attendee sign-up — rate-limited to prevent abuse
-Route::middleware('throttle:10,1')->group(function () {
+// Public attendee sign-up — rate-limited to prevent abuse.
+// 120/min per IP supports ~60 concurrent on-site scan-and-submit (shared WiFi NAT) plus retries.
+Route::middleware('throttle:120,1')->group(function () {
     Route::post('/attendees', [AttendeeController::class, 'store']);
 });
 

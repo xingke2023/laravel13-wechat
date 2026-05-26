@@ -1,7 +1,34 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
 const NAVY = '#1a3a6b';
 const GOLD = '#e8a020';
 
+const TABS = [
+  { key: 'group1', label: '开业仪式', img: '/attend-qr-1.jpg' },
+  { key: 'group2', label: '保誠',     img: '/attend-qr-2.jpg' },
+  { key: 'group3', label: '晚餐',     img: '/attend-qr-3.jpg' },
+];
+
+function resolveKey(tabParam: string | null): string {
+  if (!tabParam) return TABS[0].key;
+  const byNumber = TABS[parseInt(tabParam, 10) - 1];
+  if (byNumber) return byNumber.key;
+  const byKey = TABS.find((t) => t.key === tabParam);
+  return byKey ? byKey.key : TABS[0].key;
+}
+
 export default function AttendSuccessPage() {
+  const [active, setActive] = useState(TABS[0].key);
+
+  useEffect(() => {
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam) setActive(resolveKey(tabParam));
+  }, []);
+
+  const current = TABS.find((t) => t.key === active) ?? TABS[0];
+
   return (
     <div style={{ minHeight: '100vh', background: '#f4f7fb', fontFamily: "'PingFang SC', 'Microsoft YaHei', sans-serif" }}>
       <header style={{ background: NAVY, padding: '0 20px', height: 56, display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -20,35 +47,66 @@ export default function AttendSuccessPage() {
           </div>
 
           <h2 style={{ color: NAVY, fontSize: 20, fontWeight: 700, margin: '0 0 6px' }}>登记成功</h2>
-          <p style={{ color: '#6b7a99', fontSize: 13, margin: '0 0 24px', lineHeight: 1.6 }}>
-            扫描或长按下方二维码加入活动群 / 观看直播
+          <p style={{ color: '#e53935', fontSize: 13, margin: '0 0 20px', lineHeight: 1.6 }}>
+            扫描或长按下方二维码加入活动群
           </p>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, alignItems: 'center' }}>
-            <div style={{ background: '#f4f7fb', borderRadius: 14, padding: '16px', width: '100%', maxWidth: 240, boxSizing: 'border-box' }}>
-              <p style={{ color: '#1a3a6b', fontSize: 13, fontWeight: 700, margin: '0 0 12px', textAlign: 'center' }}>加入活动群</p>
-              <img
-                src="/wechat-group-qr.png"
-                alt="微信群二维码"
-                style={{ width: '100%', height: 'auto', borderRadius: 8, display: 'block' }}
-              />
-              <p style={{ color: '#6b7a99', fontSize: 12, margin: '10px 0 0', textAlign: 'center' }}>
-                微信「扫一扫」或长按识别
-              </p>
-            </div>
+          <div role="tablist" style={{ display: 'flex', gap: 4, background: '#f4f7fb', padding: 3, borderRadius: 8, margin: '0 auto 20px', maxWidth: 260 }}>
+            {TABS.map((tab) => {
+              const isActive = tab.key === active;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  onClick={() => setActive(tab.key)}
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    padding: '4px 6px',
+                    fontSize: 11,
+                    lineHeight: 1.3,
+                    fontWeight: 600,
+                    color: isActive ? '#fff' : '#374a6b',
+                    background: isActive ? NAVY : 'transparent',
+                    border: 'none',
+                    borderRadius: 6,
+                    cursor: 'pointer',
+                    transition: 'background 0.15s, color 0.15s',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
-            <div style={{ background: '#f4f7fb', borderRadius: 14, padding: '16px', width: '100%', maxWidth: 240, boxSizing: 'border-box' }}>
-              <p style={{ color: '#1a3a6b', fontSize: 13, fontWeight: 700, margin: '0 0 12px', textAlign: 'center' }}>手机扫码观看直播</p>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{ background: '#f4f7fb', borderRadius: 14, padding: 16, width: '100%', maxWidth: 280, boxSizing: 'border-box' }}>
+              <p style={{ color: '#1a3a6b', fontSize: 14, fontWeight: 700, margin: '0 0 12px', textAlign: 'center' }}>
+                {current.label}
+              </p>
               <img
-                src="/wechat-live-qr.png"
-                alt="直播二维码"
-                style={{ width: '100%', height: 'auto', borderRadius: 8, display: 'block' }}
+                key={current.key}
+                src={current.img}
+                alt={current.label}
+                style={{ width: '100%', height: 'auto', borderRadius: 8, display: 'block', background: '#fff' }}
               />
-              <p style={{ color: '#6b7a99', fontSize: 12, margin: '10px 0 0', textAlign: 'center' }}>
+              <p style={{ color: '#6b7a99', fontSize: 12, margin: '12px 0 0', textAlign: 'center' }}>
                 微信「扫一扫」或长按识别
               </p>
             </div>
           </div>
+
+          <p style={{ color: '#9aa3b5', fontSize: 12, margin: '20px 0 0', textAlign: 'center' }}>
+            该二维码 6 月 2 日前有效
+          </p>
+
+          <span style={{ display: 'none', color: GOLD }} />
         </div>
       </main>
     </div>

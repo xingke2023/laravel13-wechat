@@ -4,8 +4,10 @@ export interface AttendeeInput {
   name: string;
   phone: string;
   industry: string;
+  company?: string;
   email?: string;
   source?: string;
+  group_key?: 'group1' | 'group2' | 'group3';
 }
 
 export interface Attendee extends AttendeeInput {

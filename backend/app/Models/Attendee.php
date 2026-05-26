@@ -15,8 +15,10 @@ class Attendee extends Model
         'name',
         'phone',
         'industry',
+        'company',
         'email',
         'source',
+        'group_key',
         'ip',
         'user_agent',
     ];
