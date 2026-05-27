@@ -51,40 +51,6 @@ export default function AttendSuccessPage() {
             扫描或长按下方二维码加入活动群
           </p>
 
-          <div role="tablist" style={{ display: 'flex', gap: 4, background: '#f4f7fb', padding: 3, borderRadius: 8, margin: '0 auto 20px', maxWidth: 260 }}>
-            {TABS.map((tab) => {
-              const isActive = tab.key === active;
-              return (
-                <button
-                  key={tab.key}
-                  type="button"
-                  role="tab"
-                  aria-selected={isActive}
-                  onClick={() => setActive(tab.key)}
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    padding: '4px 6px',
-                    fontSize: 11,
-                    lineHeight: 1.3,
-                    fontWeight: 600,
-                    color: isActive ? '#fff' : '#374a6b',
-                    background: isActive ? NAVY : 'transparent',
-                    border: 'none',
-                    borderRadius: 6,
-                    cursor: 'pointer',
-                    transition: 'background 0.15s, color 0.15s',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
-
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <div style={{ background: '#f4f7fb', borderRadius: 14, padding: 16, width: '100%', maxWidth: 280, boxSizing: 'border-box' }}>
               <p style={{ color: '#1a3a6b', fontSize: 14, fontWeight: 700, margin: '0 0 12px', textAlign: 'center' }}>

@@ -257,3 +257,73 @@
   text-align: left;
 }
 .claw-md th { background: #f8f2ed; font-weight: 700; }
+
+/* ----------------------------------------------------------------
+ * Home page — mobile adaptation (≤ 768px)
+ * Inline styles set desktop values; these rules override on mobile.
+ * ---------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .site-header { padding: 0 16px !important; height: 56px !important; }
+  .site-logo { width: 36px !important; height: 36px !important; }
+  .site-title { font-size: 18px !important; letter-spacing: 0.5px !important; }
+  .site-subtitle { font-size: 9px !important; letter-spacing: 1.5px !important; }
+
+  /* Opening Ceremony — Invitation block */
+  .op-section { padding: 40px 16px 48px !important; }
+  .op-watermark { display: none !important; }
+  .op-eyebrow { font-size: 11px !important; letter-spacing: 3px !important; }
+  .op-sub { font-size: 13px !important; letter-spacing: 2px !important; margin-bottom: 14px !important; }
+  .op-title { font-size: 26px !important; letter-spacing: 2px !important; margin: 0 0 6px !important; }
+  .op-lead { font-size: 14px !important; }
+  .op-grid { grid-template-columns: 1fr !important; gap: 22px !important; }
+  .op-card { padding: 22px 18px !important; }
+  .op-card-label { font-size: 12px !important; letter-spacing: 2px !important; }
+  .op-card-date { font-size: 19px !important; }
+  .op-schedule { gap: 10px !important; }
+  .op-schedule-item { min-width: 0 !important; padding: 10px 14px !important; }
+  .op-schedule-time { font-size: 16px !important; }
+  .op-venue { font-size: 14px !important; }
+  .op-poster-wrap { max-width: 280px; margin: 0 auto; }
+
+  /* Opening Ceremony — About */
+  .op-about { padding: 48px 16px !important; }
+  .op-about-title { font-size: 22px !important; letter-spacing: 1px !important; }
+  .op-about-text { font-size: 14px !important; line-height: 1.95 !important; letter-spacing: 0.3px !important; }
+  .op-pillars { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; margin-top: 32px !important; }
+  .op-pillar { padding: 14px 8px !important; }
+  .op-pillar-t { font-size: 14px !important; }
+
+  /* Opening Ceremony — Gallery */
+  .op-gallery { padding: 48px 14px !important; }
+  .op-gallery-title { font-size: 22px !important; }
+  .op-gallery-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+
+  /* AI Hero */
+  .ai-hero { padding: 52px 20px 60px !important; }
+  .ai-hero-h1 { font-size: 28px !important; letter-spacing: 1px !important; }
+  .ai-hero-p { font-size: 14px !important; margin-bottom: 28px !important; }
+  .ai-hero-btn { padding: 13px 28px !important; font-size: 15px !important; }
+
+  /* Features */
+  .feat-section { padding: 48px 20px !important; }
+  .feat-h2 { font-size: 22px !important; }
+  .feat-sub { font-size: 13px !important; margin-bottom: 28px !important; }
+  .feat-grid { gap: 14px !important; }
+  .feat-card { padding: 24px 18px !important; }
+
+  /* QR signup */
+  .qr-section { padding: 40px 16px !important; }
+  .qr-wrap { gap: 24px !important; }
+  .qr-h2 { font-size: 22px !important; }
+  .qr-p { font-size: 14px !important; }
+
+  /* CTA banner */
+  .cta-banner { padding: 44px 20px !important; }
+  .cta-h2 { font-size: 20px !important; }
+  .cta-p { font-size: 13px !important; }
+  .cta-btn { padding: 12px 28px !important; font-size: 15px !important; }
+
+  /* Footer */
+  .site-footer { padding: 20px 16px !important; }
+  .site-footer p { font-size: 11px !important; }
+}
