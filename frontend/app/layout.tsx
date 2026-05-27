@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "盈信家办 AI 客户服务系统",
-  description: "盈信家办智能客服，7×24小时在线解答保险咨询、理赔查询、保单服务",
+  title: "Laravel + Next.js App",
+  description: "Full-stack app with Laravel API and Next.js frontend",
 };
 
 export default function RootLayout({

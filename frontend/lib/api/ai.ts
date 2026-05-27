@@ -27,18 +27,9 @@ export const aiApi = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-export type AiToolStatus = 'executing' | 'done' | 'error';
-
-export interface AiToolEvent {
-  name: string;
-  status: AiToolStatus;
-  args?: Record<string, unknown>;
-}
-
 export type AiStreamCallbacks = {
   onDelta?: (text: string) => void;
   onReasoning?: (text: string) => void;
-  onTool?: (event: AiToolEvent) => void;
   onError?: (message: string) => void;
 };
 
@@ -49,20 +40,17 @@ export type AiStreamCallbacks = {
  */
 export async function aiChatStream(
   body: AiChatRequest,
-  token: string | null,
+  token: string,
   cb: AiStreamCallbacks,
   signal?: AbortSignal,
 ): Promise<void> {
-  const endpoint = token ? `${API_URL}/ai/chat-stream` : `${API_URL}/ai/guest-chat-stream`;
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    Accept: 'text/event-stream',
-  };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const res = await fetch(endpoint, {
+  const res = await fetch(`${API_URL}/ai/chat-stream`, {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'text/event-stream',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(body),
     signal,
   });
@@ -98,14 +86,7 @@ export async function aiChatStream(
         const payload = line.slice(5).trim();
         if (!payload) continue;
         if (payload === '[DONE]') return;
-        let parsed: {
-          delta?: string;
-          reasoning?: string;
-          error?: string;
-          tool?: string;
-          status?: AiToolStatus;
-          args?: Record<string, unknown>;
-        };
+        let parsed: { delta?: string; reasoning?: string; error?: string };
         try {
           parsed = JSON.parse(payload);
         } catch {
@@ -116,9 +97,6 @@ export async function aiChatStream(
         }
         if (typeof parsed.reasoning === 'string' && parsed.reasoning && cb.onReasoning) {
           cb.onReasoning(parsed.reasoning);
-        }
-        if (typeof parsed.tool === 'string' && parsed.status && cb.onTool) {
-          cb.onTool({ name: parsed.tool, status: parsed.status, args: parsed.args });
         }
         if (typeof parsed.error === 'string' && cb.onError) {
           cb.onError(parsed.error);

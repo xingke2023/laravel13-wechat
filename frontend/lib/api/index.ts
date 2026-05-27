@@ -3,4 +3,3 @@ export * from './types';
 export * from './auth';
 export * from './posts';
 export * from './ai';
-export * from './attendees';

@@ -47,16 +47,4 @@ return [
         'appsecret' => env('WECHAT_APPSECRET'),
     ],
 
-    'gemini' => [
-        'api_key' => env('GEMINI_API_KEY'),
-        'base_url' => env('GEMINI_BASE_URL', 'https://tokens.fidelityai.net'),
-        'model' => env('GEMINI_MODEL', 'gemini-3-flash-preview'),
-    ],
-
-    'cxfortune_policy' => [
-        'api_key' => env('CXFORTUNE_POLICY_API_KEY'),
-        'base_url' => env('CXFORTUNE_POLICY_BASE_URL', 'http://127.0.0.1:8085/api/query'),
-        'timeout' => (int) env('CXFORTUNE_POLICY_TIMEOUT', 20),
-    ],
-
 ];

@@ -13,7 +13,7 @@ Monorepo template with **four surfaces sharing one backend**:
 | Next.js web | `frontend/` | End users | JWT (localStorage) | `127.0.0.1:3111` |
 | WeChat mini program | `miniprogram/` | End users | JWT via `wx.login` | WeChat client |
 
-All four are reverse-proxied by nginx through `ai.cxfortune.com` (configured in `ai.cxfortune.com.conf`, behind Cloudflare). The Laravel API + Filament admin **share `users` table but use different auth mechanisms** — logging into one does NOT log into the other.
+All four are reverse-proxied by nginx through `paper.xingke888.com` (configured in `paper.xingke888.com.conf`, behind Cloudflare). The Laravel API + Filament admin **share `users` table but use different auth mechanisms** — logging into one does NOT log into the other.
 
 ### Auth flows (three distinct, same User model)
 
@@ -39,7 +39,7 @@ JWT lifetime: `JWT_TTL=4320` (3 days), `JWT_REFRESH_TTL=20160` (14 days). Refres
 - `lib/auth-context.tsx` — `AuthProvider` + `useAuth()` hook (user, token, login, register, logout, isAuthenticated)
 - `components/onboarding-chat.tsx` — full-featured chat modal mimicking WeChat UI (red gradient header, cream chat body, AI/user bubbles, font-size A/A/A, streaming AI replies via `aiChatStream`, 401 auto-logout)
 - `app/page.tsx` — landing page with red CTA button that opens `<OnboardingChat>`
-- `next.config.ts` — `allowedDevOrigins: ['ai.cxfortune.com']` required so dev resources serve to non-localhost hosts
+- `next.config.ts` — `allowedDevOrigins: ['paper.xingke888.com']` required so dev resources serve to non-localhost hosts
 
 ### Mini program (`miniprogram/`, native WXML/WXSS/JS)
 
@@ -60,16 +60,16 @@ JWT lifetime: `JWT_TTL=4320` (3 days), `JWT_REFRESH_TTL=20160` (14 days). Refres
 
 | File | Role |
 |---|---|
-| `ecosystem.config.js` | PM2 spec: `hengtai-backend` runs `php8.4 artisan serve --host=127.0.0.1 --port=8081`; `hengtai-frontend` runs `./node_modules/.bin/next dev -p 3111 -H 127.0.0.1` |
-| `ai.cxfortune.com.conf` | nginx: terminates HTTPS, proxies `/api`, `/admin/*` to 8081, everything else to 3111. **`/api/ai/chat-stream` has `proxy_buffering off; proxy_cache off; proxy_read_timeout 300s`** for SSE |
-| `/etc/nginx/sites-enabled/ai.cxfortune.com` | symlink to deployed copy of the conf above |
+| `ecosystem.config.js` | PM2 spec: `clawcn-template-backend` runs `php8.4 artisan serve --host=127.0.0.1 --port=8081`; `clawcn-template-frontend` runs `./node_modules/.bin/next dev -p 3111 -H 127.0.0.1` |
+| `paper.xingke888.com.conf` | nginx: terminates HTTPS, proxies `/api`, `/admin/*` to 8081, everything else to 3111. **`/api/ai/chat-stream` has `proxy_buffering off; proxy_cache off; proxy_read_timeout 300s`** for SSE |
+| `/etc/nginx/sites-enabled/paper.xingke888.com` | symlink to deployed copy of the conf above |
 | Cloudflare | terminates TLS for browsers; **must enable WebSockets in Network settings** for Next.js dev HMR to work |
 
 ### Required env (`backend/.env`)
 
 ```
-APP_URL=https://ai.cxfortune.com
-FRONTEND_URL=https://ai.cxfortune.com
+APP_URL=https://paper.xingke888.com
+FRONTEND_URL=https://paper.xingke888.com
 DB_CONNECTION=pgsql
 DB_HOST=127.0.0.1
 DB_DATABASE=clawdb
@@ -87,7 +87,7 @@ WECHAT_APPSECRET=<from mp.weixin.qq.com>
 
 `frontend/.env.local`:
 ```
-NEXT_PUBLIC_API_URL=https://ai.cxfortune.com/api
+NEXT_PUBLIC_API_URL=https://paper.xingke888.com/api
 ```
 
 ## Development Commands
@@ -118,14 +118,14 @@ npx shadcn@latest add [component]                    # add UI component
 ```
 
 ### Mini program
-Open `miniprogram/` in WeChat DevTools. AppID is pre-filled in `project.config.json`. For local development, `project.private.config.json` disables `urlCheck` so requests to `ai.cxfortune.com` work. **Before real-device preview**: add `https://ai.cxfortune.com` to all four whitelists in mp.weixin.qq.com → 开发管理 → 服务器域名 (`request`, `uploadFile`, `downloadFile`, `socket` not needed).
+Open `miniprogram/` in WeChat DevTools. AppID is pre-filled in `project.config.json`. For local development, `project.private.config.json` disables `urlCheck` so requests to `paper.xingke888.com` work. **Before real-device preview**: add `https://paper.xingke888.com` to all four whitelists in mp.weixin.qq.com → 开发管理 → 服务器域名 (`request`, `uploadFile`, `downloadFile`, `socket` not needed).
 
 ### PM2 (production processes)
 ```bash
 pm2 start ecosystem.config.js
 pm2 list
-pm2 restart hengtai-backend
-pm2 logs hengtai-frontend --lines 50
+pm2 restart clawcn-template-backend
+pm2 logs clawcn-template-frontend --lines 50
 pm2 save                                             # persist process list across reboots
 ```
 
@@ -134,7 +134,7 @@ pm2 save                                             # persist process list acro
 ### Adding a new API endpoint
 1. Controller method in `backend/app/Http/Controllers/Api/`
 2. Route in `backend/routes/api.php` (inside `auth:api` group if protected)
-3. `php artisan route:cache` + `pm2 restart hengtai-backend`
+3. `php artisan route:cache` + `pm2 restart clawcn-template-backend`
 4. Frontend: TypeScript types in `frontend/lib/api/types.ts`, method in `frontend/lib/api/*.ts`, re-export in `frontend/lib/api/index.ts`
 5. Mini program: method in `miniprogram/utils/api.js` using `request()` helper
 
@@ -166,7 +166,7 @@ cd /home/ubuntu/clawcn-template/backend
 PASS=$(grep "^DB_PASSWORD=" .env | cut -d= -f2-)
 USER=$(grep "^DB_USERNAME=" .env | cut -d= -f2-)
 sudo -u postgres psql -c "ALTER ROLE $USER WITH PASSWORD '$PASS';"
-pm2 restart hengtai-backend
+pm2 restart clawcn-template-backend
 ```
 
 ## Technology versions
